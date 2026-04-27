@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Algorithm Visualizer — LEXO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #06040f;
+      --surface: #0e0b1e;
+      --surface2: #141028;
+      --purple: #a855f7;
+      --purple2: #c084fc;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --pink: #f472b6;
+      --orange: #fb923c;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --white: #f0eeff;
+      --muted: #6b6885;
+      --border: rgba(168,85,247,0.15);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(168,85,247,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(168,85,247,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 20px 32px;
+      background: rgba(6,4,15,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.1rem;
+      letter-spacing: 0.15em;
+    }
+
+    .brand span { color: var(--purple2); }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+    }
+
+    /* ===== MAIN ===== */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+
+    /* ===== CONTROLS ===== */
+    .controls {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-end;
+    }
+
+    .ctrl-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ctrl-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ALGO TABS */
+    .algo-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab:hover { border-color: var(--purple); color: var(--purple2); }
+
+    .tab.active {
+      background: rgba(168,85,247,0.15);
+      border-color: var(--purple);
+      color: var(--purple2);
+      box-shadow: 0 0 12px rgba(168,85,247,0.2);
+    }
+
+    .tab.search-tab.active {
+      background: rgba(34,211,238,0.12);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(34,211,238,0.2);
+    }
+
+    /* SLIDER */
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 130px;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--purple);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(168,85,247,0.5);
+    }
+
+    .slider-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--purple2);
+      min-width: 28px;
+    }
+
+    /* ACTION BUTTONS */
+    .action-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #7c3aed, var(--purple));
+      color: white;
+      box-shadow: 0 4px 16px rgba(168,85,247,0.3);
+    }
+
+    .btn-start:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(168,85,247,0.4);
+    }
+
+    .btn-reset {
+      background: rgba(255,255,255,0.05);
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .btn-reset:hover { color: var(--white); border-color: rgba(255,255,255,0.25); }
+
+    .btn-shuffle {
+      background: rgba(34,211,238,0.1);
+      color: var(--cyan);
+      border: 1px solid rgba(34,211,238,0.2);
+    }
+
+    .btn-shuffle:hover { background: rgba(34,211,238,0.2); }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+    /* TARGET INPUT for search */
+    .target-wrap { display: flex; align-items: center; gap: 8px; }
+
+    #targetInput {
+      width: 80px;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--cyan);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      outline: none;
+      text-align: center;
+    }
+
+    #targetInput:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(34,211,238,0.2); }
+
+    /* ===== CANVAS AREA ===== */
+    .viz-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px 16px;
+      margin-bottom: 20px;
+      position: relative;
+      min-height: 320px;
+    }
+
+    .viz-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .viz-title .algo-name {
+      color: var(--purple2);
+      font-size: 0.8rem;
+    }
+
+    #barContainer {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 260px;
+      width: 100%;
+    }
+
+    .bar {
+      flex: 1;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.05s ease;
+      position: relative;
+      min-width: 4px;
+    }
+
+    .bar-label {
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.55rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Bar states */
+    .bar.default  { background: linear-gradient(to top, #3730a3, var(--purple)); }
+    .bar.compare  { background: linear-gradient(to top, #b45309, var(--yellow)); box-shadow: 0 0 8px rgba(251,191,36,0.4); }
+    .bar.swap     { background: linear-gradient(to top, #be185d, var(--pink)); box-shadow: 0 0 12px rgba(244,114,182,0.5); }
+    .bar.sorted   { background: linear-gradient(to top, #065f46, var(--green)); box-shadow: 0 0 8px rgba(74,222,128,0.3); }
+    .bar.pivot    { background: linear-gradient(to top, #c2410c, var(--orange)); box-shadow: 0 0 10px rgba(251,146,60,0.5); }
+    .bar.found    { background: linear-gradient(to top, #0e7490, var(--cyan)); box-shadow: 0 0 16px rgba(34,211,238,0.6); animation: foundPulse 0.5s ease; }
+    .bar.current  { background: linear-gradient(to top, #7c3aed, var(--purple2)); box-shadow: 0 0 10px rgba(192,132,252,0.5); }
+    .bar.notfound { background: linear-gradient(to top, #7f1d1d, var(--red)); }
+
+    @keyframes foundPulse {
+      0%   { transform: scaleY(1.1); }
+      50%  { transform: scaleY(1.2); }
+      100% { transform: scaleY(1); }
+    }
+
+    /* ===== STATS ===== */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .stat-card .s-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .stat-card .s-val {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.5rem;
+      color: var(--purple2);
+      font-weight: 400;
+    }
+
+    /* ===== LOG ===== */
+    .log-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    .log-box::-webkit-scrollbar { width: 3px; }
+    .log-box::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 2px; }
+
+    .log-line {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      letter-spacing: 0.05em;
+    }
+
+    .log-line.highlight { color: var(--purple2); }
+    .log-line.success   { color: var(--green); }
+    .log-line.warning   { color: var(--yellow); }
+
+    /* FOOTER */
+    .page-footer {
+      text-align: center;
+      padding: 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .page-footer span { color: var(--purple); }
+
+    @media (max-width: 600px) {
+      header { padding: 14px 16px; }
+      main { padding: 16px 12px; }
+      .controls { padding: 16px; }
+      #barContainer { height: 200px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span>//</span> ALGO_VIZ <span>· LEXO</span></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div>Default</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Comparing</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f472b6"></div>Swapping</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fb923c"></div>Pivot</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div>Sorted</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div>Found</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- CONTROLS -->
+  <div class="controls">
+
+    <!-- Algorithm Selection -->
+    <div class="ctrl-group" style="flex:1; min-width:200px;">
+      <div class="ctrl-label">Algorithm</div>
+      <div class="algo-tabs" id="algoTabs">
+        <button class="tab active" data-algo="bubble">Bubble</button>
+        <button class="tab" data-algo="selection">Selection</button>
+        <button class="tab" data-algo="insertion">Insertion</button>
+        <button class="tab" data-algo="quick">Quick</button>
+        <button class="tab search-tab" data-algo="linear">Linear Search</button>
+        <button class="tab search-tab" data-algo="binary">Binary Search</button>
+      </div>
+    </div>
+
+    <!-- Array Size -->
+    <div class="ctrl-group">
+      <div class="ctrl-label">Array Size</div>
+      <div class="slider-wrap">
+        <input type="range" id="sizeSlider" min="10" max="60" value="30" oninput="updateSize(this.value)"/>
+        <span class="slider-val" id="sizeVal">30</span>
+      </div>
+    </div>
+
+    <!-- Speed -->
+    <div class="ctrl-group">
+      <div class="ctrl-label">Speed</div>
+      <div class="slider-wrap">
+        <input type="range" id="speedSlider" min="1" max="10" value="5"/>
+        <span class="slider-val" style="color:var(--cyan)">
+          <span id="speedLabel">5</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Search Target -->
+    <div class="ctrl-group" id="targetGroup" style="display:none;">
+      <div class="ctrl-label">Target Value</div>
+      <div class="target-wrap">
+        <input type="number" id="targetInput" value="42" min="1" max="100"/>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="ctrl-group">
+      <div class="ctrl-label">Actions</div>
+      <div class="action-btns">
+        <button class="btn btn-start" id="startBtn" onclick="startViz()">▶ Start</button>
+        <button class="btn btn-shuffle" onclick="generateArray()">⟳ Shuffle</button>
+        <button class="btn btn-reset" onclick="resetViz()">Reset</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VISUALIZER -->
+  <div class="viz-box">
+    <div class="viz-title">
+      <span>// Visualization</span>
+      <span class="algo-name" id="algoLabel">Bubble Sort</span>
+    </div>
+    <div id="barContainer"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="s-label">Comparisons</div>
+      <div class="s-val" id="statComp">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">Swaps</div>
+      <div class="s-val" id="statSwap">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">Array Size</div>
+      <div class="s-val" id="statSize">30</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">Status</div>
+      <div class="s-val" id="statStatus" style="font-size:0.9rem; color:var(--muted)">READY</div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="log-box" id="logBox">
+    <div class="log-line">// Algorithm Visualizer ready. Select an algorithm and press Start.</div>
+  </div>
+
+</main>
+
+<div class="page-footer">Built by <span>Shaik Sofiyan</span> · HTML CSS JS · <span>LEXO</span></div>
+
+<script>
+  // ============================================
+  // STATE
+  // ============================================
+  let array       = [];
+  let arraySize   = 30;
+  let isRunning   = false;
+  let currentAlgo = 'bubble';
+  let comparisons = 0;
+  let swaps       = 0;
+
+  const algoNames = {
+    bubble:    'Bubble Sort',
+    selection: 'Selection Sort',
+    insertion: 'Insertion Sort',
+    quick:     'Quick Sort',
+    linear:    'Linear Search',
+    binary:    'Binary Search'
+  };
+
+  // ============================================
+  // INIT
+  // ============================================
+  generateArray();
+
+  document.getElementById('algoTabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab');
+    if (!tab || isRunning) return;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentAlgo = tab.dataset.algo;
+    document.getElementById('algoLabel').textContent = algoNames[currentAlgo];
+
+    // Show/hide target input for search
+    const isSearch = currentAlgo === 'linear' || currentAlgo === 'binary';
+    document.getElementById('targetGroup').style.display = isSearch ? 'flex' : 'none';
+
+    // Binary search needs sorted array
+    if (currentAlgo === 'binary') {
+      array.sort((a,b) => a-b);
+      renderBars(array.map(() => 'default'));
+      addLog('// Binary Search requires sorted array — auto-sorted!', 'warning');
+    }
+
+    resetStats();
+  });
+
+  document.getElementById('speedSlider').oninput = function() {
+    document.getElementById('speedLabel').textContent = this.value;
+  };
+
+  // ============================================
+  // ARRAY GENERATION
+  // ============================================
+  function generateArray() {
+    if (isRunning) return;
+    array = [];
+    for (let i = 0; i < arraySize; i++) {
+      array.push(Math.floor(Math.random() * 95) + 5);
+    }
+    renderBars(array.map(() => 'default'));
+    resetStats();
+    addLog('// New array generated — ' + arraySize + ' elements', 'highlight');
+  }
+
+  function updateSize(val) {
+    arraySize = parseInt(val);
+    document.getElementById('sizeVal').textContent = val;
+    document.getElementById('statSize').textContent = val;
+    generateArray();
+  }
+
+  // ============================================
+  // RENDER BARS
+  // ============================================
+  function renderBars(states) {
+    const container = document.getElementById('barContainer');
+    container.innerHTML = '';
+    const maxVal = Math.max(...array);
+
+    array.forEach((val, i) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar ' + (states[i] || 'default');
+      bar.style.height = ((val / maxVal) * 100) + '%';
+      bar.id = 'bar-' + i;
+
+      // Show numbers only if array is small enough
+      if (arraySize <= 25) {
+        const lbl = document.createElement('div');
+        lbl.className = 'bar-label';
+        lbl.textContent = val;
+        bar.appendChild(lbl);
+      }
+
+      container.appendChild(bar);
+    });
+  }
+
+  // ============================================
+  // DELAY
+  // ============================================
+  function getDelay() {
+    const speed = parseInt(document.getElementById('speedSlider').value);
+    return Math.round(600 / speed);
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // ============================================
+  // STATS & LOG
+  // ============================================
+  function resetStats() {
+    comparisons = 0; swaps = 0;
+    document.getElementById('statComp').textContent = '0';
+    document.getElementById('statSwap').textContent = '0';
+    document.getElementById('statStatus').textContent = 'READY';
+    document.getElementById('statStatus').style.color = 'var(--muted)';
+  }
+
+  function updateStats() {
+    document.getElementById('statComp').textContent = comparisons;
+    document.getElementById('statSwap').textContent = swaps;
+  }
+
+  function addLog(msg, type = '') {
+    const box = document.getElementById('logBox');
+    const line = document.createElement('div');
+    line.className = 'log-line ' + type;
+    line.textContent = msg;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+    // Keep max 50 lines
+    while (box.children.length > 50) box.removeChild(box.firstChild);
+  }
+
+  function setStatus(text, color) {
+    const el = document.getElementById('statStatus');
+    el.textContent = text;
+    el.style.color = color || 'var(--muted)';
+  }
+
+  // ============================================
+  // START / RESET
+  // ============================================
+  async function startViz() {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById('startBtn').disabled = true;
+    resetStats();
+    setStatus('RUNNING', 'var(--yellow)');
+    addLog('// Starting ' + algoNames[currentAlgo] + '...', 'highlight');
+
+    const arr = [...array];
+
+    switch(currentAlgo) {
+      case 'bubble':    await bubbleSort(arr); break;
+      case 'selection': await selectionSort(arr); break;
+      case 'insertion': await insertionSort(arr); break;
+      case 'quick':     await quickSortWrapper(arr); break;
+      case 'linear':    await linearSearch(arr); break;
+      case 'binary':    await binarySearch(arr); break;
+    }
+
+    isRunning = false;
+    document.getElementById('startBtn').disabled = false;
+  }
+
+  function resetViz() {
+    if (isRunning) return;
+    generateArray();
+    document.getElementById('logBox').innerHTML = '';
+    addLog('// Reset complete. Ready.', 'highlight');
+    setStatus('READY', 'var(--muted)');
+  }
+
+  // ============================================
+  // BUBBLE SORT
+  // ============================================
+  async function bubbleSort(arr) {
+    const n = arr.length;
+    const states = new Array(n).fill('default');
+
+    for (let i = 0; i < n - 1; i++) {
+      let swapped = false;
+      for (let j = 0; j < n - i - 1; j++) {
+        // Compare
+        states[j] = 'compare'; states[j+1] = 'compare';
+        comparisons++;
+        renderBars(states);
+        updateStats();
+        await sleep(getDelay());
+
+        if (arr[j] > arr[j+1]) {
+          // Swap
+          states[j] = 'swap'; states[j+1] = 'swap';
+          renderBars(states);
+          await sleep(getDelay() * 0.5);
+
+          [arr[j], arr[j+1]] = [arr[j+1], arr[j]];
+          array = [...arr];
+          swaps++;
+          swapped = true;
+          updateStats();
+        }
+
+        states[j] = 'default'; states[j+1] = 'default';
+        renderBars(states);
+      }
+      states[n-1-i] = 'sorted';
+      if (!swapped) break;
+    }
+
+    // Mark all sorted
+    for (let i = 0; i < n; i++) states[i] = 'sorted';
+    renderBars(states);
+    setStatus('SORTED!', 'var(--green)');
+    addLog('// Bubble Sort complete! Comparisons: ' + comparisons + ' | Swaps: ' + swaps, 'success');
+  }
+
+  // ============================================
+  // SELECTION SORT
+  // ============================================
+  async function selectionSort(arr) {
+    const n = arr.length;
+    const states = new Array(n).fill('default');
+
+    for (let i = 0; i < n - 1; i++) {
+      let minIdx = i;
+      states[i] = 'pivot';
+      renderBars(states);
+
+      for (let j = i + 1; j < n; j++) {
+        states[j] = 'compare';
+        comparisons++;
+        renderBars(states);
+        updateStats();
+        await sleep(getDelay());
+
+        if (arr[j] < arr[minIdx]) {
+          if (minIdx !== i) states[minIdx] = 'default';
+          minIdx = j;
+          states[minIdx] = 'pivot';
+        } else {
+          states[j] = 'default';
+        }
+        renderBars(states);
+      }
+
+      if (minIdx !== i) {
+        states[minIdx] = 'swap'; states[i] = 'swap';
+        renderBars(states);
+        await sleep(getDelay());
+        [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+        array = [...arr];
+        swaps++;
+        updateStats();
+      }
+
+      states[i] = 'sorted';
+      if (minIdx !== i) states[minIdx] = 'default';
+      renderBars(states);
+    }
+
+    states[n-1] = 'sorted';
+    renderBars(states);
+    setStatus('SORTED!', 'var(--green)');
+    addLog('// Selection Sort complete! Comparisons: ' + comparisons + ' | Swaps: ' + swaps, 'success');
+  }
+
+  // ============================================
+  // INSERTION SORT
+  // ============================================
+  async function insertionSort(arr) {
+    const n = arr.length;
+    const states = new Array(n).fill('default');
+    states[0] = 'sorted';
+    renderBars(states);
+
+    for (let i = 1; i < n; i++) {
+      const key = arr[i];
+      states[i] = 'pivot';
+      renderBars(states);
+      await sleep(getDelay());
+
+      let j = i - 1;
+      while (j >= 0 && arr[j] > key) {
+        states[j] = 'compare';
+        comparisons++;
+        renderBars(states);
+        updateStats();
+        await sleep(getDelay());
+
+        arr[j+1] = arr[j];
+        array = [...arr];
+        swaps++;
+        states[j+1] = 'swap';
+        states[j] = 'sorted';
+        renderBars(states);
+        await sleep(getDelay() * 0.5);
+        j--;
+      }
+
+      arr[j+1] = key;
+      array = [...arr];
+      states[j+1] = 'sorted';
+      renderBars(states);
+      updateStats();
+    }
+
+    for (let i = 0; i < n; i++) states[i] = 'sorted';
+    renderBars(states);
+    setStatus('SORTED!', 'var(--green)');
+    addLog('// Insertion Sort complete! Comparisons: ' + comparisons + ' | Swaps: ' + swaps, 'success');
+  }
+
+  // ============================================
+  // QUICK SORT
+  // ============================================
+  async function quickSortWrapper(arr) {
+    const states = new Array(arr.length).fill('default');
+    await quickSort(arr, 0, arr.length - 1, states);
+    for (let i = 0; i < arr.length; i++) states[i] = 'sorted';
+    renderBars(states);
+    setStatus('SORTED!', 'var(--green)');
+    addLog('// Quick Sort complete! Comparisons: ' + comparisons + ' | Swaps: ' + swaps, 'success');
+  }
+
+  async function quickSort(arr, low, high, states) {
+    if (low < high) {
+      const pi = await partition(arr, low, high, states);
+      await quickSort(arr, low, pi - 1, states);
+      await quickSort(arr, pi + 1, high, states);
+    }
+    if (low === high) { states[low] = 'sorted'; renderBars(states); }
+  }
+
+  async function partition(arr, low, high, states) {
+    const pivot = arr[high];
+    states[high] = 'pivot';
+    renderBars(states);
+    let i = low - 1;
+
+    for (let j = low; j < high; j++) {
+      states[j] = 'compare';
+      comparisons++;
+      renderBars(states);
+      updateStats();
+      await sleep(getDelay());
+
+      if (arr[j] <= pivot) {
+        i++;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+        array = [...arr];
+        swaps++;
+        states[i] = 'swap'; states[j] = 'swap';
+        renderBars(states);
+        updateStats();
+        await sleep(getDelay() * 0.5);
+        states[i] = 'default'; states[j] = 'default';
+      } else {
+        states[j] = 'default';
+      }
+      renderBars(states);
+    }
+
+    [arr[i+1], arr[high]] = [arr[high], arr[i+1]];
+    array = [...arr];
+    swaps++;
+    states[high] = 'default';
+    states[i+1] = 'sorted';
+    renderBars(states);
+    await sleep(getDelay());
+    return i + 1;
+  }
+
+  // ============================================
+  // LINEAR SEARCH
+  // ============================================
+  async function linearSearch(arr) {
+    const target = parseInt(document.getElementById('targetInput').value);
+    const states = new Array(arr.length).fill('default');
+    addLog('// Searching for: ' + target, 'highlight');
+    let found = false;
+
+    for (let i = 0; i < arr.length; i++) {
+      states[i] = 'compare';
+      comparisons++;
+      renderBars(states);
+      updateStats();
+      await sleep(getDelay());
+
+      if (arr[i] === target) {
+        states[i] = 'found';
+        renderBars(states);
+        setStatus('FOUND!', 'var(--cyan)');
+        addLog('// Found ' + target + ' at index ' + i + '! Comparisons: ' + comparisons, 'success');
+        found = true;
+        break;
+      } else {
+        states[i] = 'notfound';
+        renderBars(states);
+      }
+    }
+
+    if (!found) {
+      setStatus('NOT FOUND', 'var(--red)');
+      addLog('// ' + target + ' not found. Comparisons: ' + comparisons, 'warning');
+    }
+  }
+
+  // ============================================
+  // BINARY SEARCH
+  // ============================================
+  async function binarySearch(arr) {
+    const target = parseInt(document.getElementById('targetInput').value);
+    const states = new Array(arr.length).fill('default');
+    addLog('// Binary searching for: ' + target, 'highlight');
+    let low = 0, high = arr.length - 1;
+    let found = false;
+
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      // Highlight search range
+      for (let i = low; i <= high; i++) states[i] = 'current';
+      states[mid] = 'compare';
+      comparisons++;
+      renderBars(states);
+      updateStats();
+      addLog('// Checking mid[' + mid + '] = ' + arr[mid]);
+      await sleep(getDelay() * 1.5);
+
+      if (arr[mid] === target) {
+        states[mid] = 'found';
+        renderBars(states);
+        setStatus('FOUND!', 'var(--cyan)');
+        addLog('// Found ' + target + ' at index ' + mid + '! Comparisons: ' + comparisons, 'success');
+        found = true;
+        break;
+      } else if (arr[mid] < target) {
+        for (let i = low; i <= mid; i++) states[i] = 'notfound';
+        low = mid + 1;
+        addLog('// Target > mid, search right half');
+      } else {
+        for (let i = mid; i <= high; i++) states[i] = 'notfound';
+        high = mid - 1;
+        addLog('// Target < mid, search left half');
+      }
+      renderBars(states);
+      await sleep(getDelay());
+    }
+
+    if (!found) {
+      setStatus('NOT FOUND', 'var(--red)');
+      addLog('// ' + target + ' not found. Comparisons: ' + comparisons, 'warning');
+    }
+  }
+</script>
+
+</body>
+</html>
